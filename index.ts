@@ -6,16 +6,22 @@ import {
   distinctUntilChanged,
   map,
   switchMap,
-  filter
+  filter,
+  shareReplay,
+  take,
+  startWith
 } from "rxjs/operators";
 
-const keyword$ = fromEvent(document.getElementById("keyword"), "input");
+const keyword$ = fromEvent(document.getElementById("keyword"), "input").pipe(
+  map(event => (event.target as HTMLInputElement).value),
+  startWith(""), // prevent searchByKeyword$ have no value to initiate
+  shareReplay(1)
+);
 
 keyword$
   .pipe(
-    map(event => (event.target as HTMLInputElement).value),
-    debounceTime(500),
-    distinctUntilChanged(),
+    debounceTime(500), // wait for half a minute
+    distinctUntilChanged(), // triggered only when value changed
     filter(keyword => keyword.length >= 3),
     switchMap(keyword => dataUtils.getSuggestions(keyword))
   )
@@ -23,14 +29,15 @@ keyword$
     domUtils.fillAutoSuggestions(options);
   });
 
+const keywordForSearch$ = keyword$.pipe(take(1)); // take value form keyword$
+
 const search$ = fromEvent(document.getElementById("search"), "click");
 
-search$
-  .pipe(
-    switchMap(_ =>
-      dataUtils.getSearchResult(
-        (document.getElementById("keyword") as HTMLInputElement).value
-      )
-    )
-  )
+const searchByKeyword$ = search$.pipe(
+  switchMap(_ => keywordForSearch$),
+  filter(keyword => !!keyword)
+);
+
+searchByKeyword$
+  .pipe(switchMap(keyword => dataUtils.getSearchResult(keyword)))
   .subscribe(result => domUtils.fillSearchResult(result));
