@@ -7,4 +7,8 @@ const keyword$ = fromEvent(document.getElementById("keyword"), "input").pipe(
   map(event => (event.target as HTMLInputElement).value)
 );
 
-keyword$.subscribe(console.log);
+keyword$.subscribe(keyword => {
+  dataUtils.getSuggestions(keyword).subscribe(options => {
+    domUtils.fillAutoSuggestions(options);
+  });
+});
