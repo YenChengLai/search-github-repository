@@ -42,6 +42,7 @@ searchByKeyword$
   .pipe(switchMap(keyword => dataUtils.getSearchResult(keyword)))
   .subscribe(result => domUtils.fillSearchResult(result));
 
+// use BehaviorSubject to give default value
 const sortedBy$ = new BehaviorSubject({ sort: "stars", order: "desc" });
 
 const changeSort = (sortField: string) => {
