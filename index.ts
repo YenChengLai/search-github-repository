@@ -1,6 +1,6 @@
 import * as domUtils from "./dom-utils";
 import * as dataUtils from "./data-utils";
-import { fromEvent } from "rxjs";
+import { BehaviorSubject, fromEvent } from "rxjs";
 import {
   debounceTime,
   distinctUntilChanged,
@@ -41,3 +41,26 @@ const searchByKeyword$ = search$.pipe(
 searchByKeyword$
   .pipe(switchMap(keyword => dataUtils.getSearchResult(keyword)))
   .subscribe(result => domUtils.fillSearchResult(result));
+
+const sortedBy$ = new BehaviorSubject({ sort: "stars", order: "desc" });
+
+const changeSort = (sortField: string) => {
+  if (sortField === sortedBy$.value.sort) {
+    sortedBy$.next({
+      sort: sortField,
+      order: sortedBy$.value.order === "asc" ? "desc" : "asc"
+    });
+  } else {
+    sortedBy$.next({
+      sort: sortField,
+      order: "desc"
+    });
+  }
+};
+
+fromEvent(document.getElementById("sort-stars"), "click").subscribe(_ => {
+  changeSort("stars");
+});
+fromEvent(document.getElementById("sort-forks"), "click").subscribe(_ => {
+  changeSort("forks");
+});
