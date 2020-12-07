@@ -9,7 +9,8 @@ import {
   filter,
   shareReplay,
   take,
-  startWith
+  startWith,
+  mapTo
 } from "rxjs/operators";
 
 const keyword$ = fromEvent(document.getElementById("keyword"), "input").pipe(
@@ -65,3 +66,19 @@ fromEvent(document.getElementById("sort-stars"), "click").subscribe(_ => {
 fromEvent(document.getElementById("sort-forks"), "click").subscribe(_ => {
   changeSort("forks");
 });
+
+// Listener for data counts per page
+const perPage$ = fromEvent(document.getElementById("per-page"), "change").pipe(
+  map(event => (event.target as HTMLSelectElement).value)
+);
+
+// Listener for previous page button
+const previousPage$ = fromEvent(
+  document.getElementById("previous-page"),
+  "click"
+).pipe(mapTo(-1));
+
+// Listener for next page button
+const nextPage$ = fromEvent(document.getElementById("next-page"), "click").pipe(
+  mapTo(1)
+);
