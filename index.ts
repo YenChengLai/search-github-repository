@@ -69,9 +69,9 @@ fromEvent(document.getElementById("sort-forks"), "click").subscribe(_ => {
 });
 
 // Listener for data counts per page
-const perPage$ = fromEvent(document.getElementById("per-page"), "change")
-  .pipe(map(event => +(event.target as HTMLSelectElement).value))
-  .pipe(startWith(10));
+const perPage$ = fromEvent(document.getElementById("per-page"), "change").pipe(
+  map(event => +(event.target as HTMLSelectElement).value)
+);
 
 // Listener for previous page button
 const previousPage$ = fromEvent(
@@ -89,15 +89,24 @@ const page$ = merge(previousPage$, nextPage$).pipe(
   scan((currentPageIndex, value) => {
     const nextPage = currentPageIndex + value;
     return nextPage < 1 ? 1 : nextPage;
-  }, 1),
-  startWith(1)
+  }, 1)
 );
+
+page$.subscribe(page => domUtils.updatePageNumber(page));
+
+sortedBy$
+  .pipe(filter(sort => sort.sort === "stars"))
+  .subscribe(sort => domUtils.updateStarsSort(sort));
+
+sortedBy$
+  .pipe(filter(sort => sort.sort === "forks"))
+  .subscribe(sort => domUtils.updateForksSort(sort));
 
 const startSearch$ = combineLatest([
   searchByKeyword$,
   sortedBy$,
-  perPage$,
-  page$
+  page$.pipe(startWith(1)),
+  perPage$.pipe(startWith(10))
 ]);
 
 const searchResult$ = startSearch$.pipe(
