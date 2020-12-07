@@ -109,10 +109,19 @@ const startSearch$ = combineLatest([
   perPage$.pipe(startWith(10))
 ]);
 
+// add cover page div
+startSearch$.subscribe(() => {
+  domUtils.loading();
+});
+
 const searchResult$ = startSearch$.pipe(
   switchMap(([keyword, sort, page, perPage]) =>
     dataUtils.getSearchResult(keyword, sort.sort, sort.order, page, perPage)
   )
 );
 
-searchResult$.subscribe(result => domUtils.fillSearchResult(result));
+// load data and remove cover page div
+searchResult$.subscribe(result => {
+  domUtils.fillSearchResult(result);
+  domUtils.loaded();
+});
