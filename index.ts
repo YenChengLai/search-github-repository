@@ -1,6 +1,6 @@
 import * as domUtils from "./dom-utils";
 import * as dataUtils from "./data-utils";
-import { BehaviorSubject, fromEvent } from "rxjs";
+import { BehaviorSubject, fromEvent, merge, combineLatest } from "rxjs";
 import {
   debounceTime,
   distinctUntilChanged,
@@ -10,7 +10,8 @@ import {
   shareReplay,
   take,
   startWith,
-  mapTo
+  mapTo,
+  scan
 } from "rxjs/operators";
 
 const keyword$ = fromEvent(document.getElementById("keyword"), "input").pipe(
@@ -68,9 +69,9 @@ fromEvent(document.getElementById("sort-forks"), "click").subscribe(_ => {
 });
 
 // Listener for data counts per page
-const perPage$ = fromEvent(document.getElementById("per-page"), "change").pipe(
-  map(event => (event.target as HTMLSelectElement).value)
-);
+const perPage$ = fromEvent(document.getElementById("per-page"), "change")
+  .pipe(map(event => +(event.target as HTMLSelectElement).value))
+  .pipe(startWith(10));
 
 // Listener for previous page button
 const previousPage$ = fromEvent(
@@ -82,3 +83,27 @@ const previousPage$ = fromEvent(
 const nextPage$ = fromEvent(document.getElementById("next-page"), "click").pipe(
   mapTo(1)
 );
+
+// Merge previous and next page as page change listener
+const page$ = merge(previousPage$, nextPage$).pipe(
+  scan((currentPageIndex, value) => {
+    const nextPage = currentPageIndex + value;
+    return nextPage < 1 ? 1 : nextPage;
+  }, 1),
+  startWith(1)
+);
+
+const startSearch$ = combineLatest([
+  searchByKeyword$,
+  sortedBy$,
+  perPage$,
+  page$
+]);
+
+const searchResult$ = startSearch$.pipe(
+  switchMap(([keyword, sort, page, perPage]) =>
+    dataUtils.getSearchResult(keyword, sort.sort, sort.order, page, perPage)
+  )
+);
+
+searchResult$.subscribe(result => domUtils.fillSearchResult(result));
