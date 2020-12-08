@@ -1,6 +1,6 @@
 import * as domUtils from "./dom-utils";
 import * as dataUtils from "./data-utils";
-import { BehaviorSubject, fromEvent, merge, combineLatest } from "rxjs";
+import { BehaviorSubject, fromEvent, merge, combineLatest, of } from "rxjs";
 import {
   debounceTime,
   distinctUntilChanged,
@@ -11,7 +11,8 @@ import {
   take,
   startWith,
   mapTo,
-  scan
+  scan,
+  catchError
 } from "rxjs/operators";
 
 const keyword$ = fromEvent(document.getElementById("keyword"), "input").pipe(
@@ -125,3 +126,18 @@ searchResult$.subscribe(result => {
   domUtils.fillSearchResult(result);
   domUtils.loaded();
 });
+
+const getSearchResult = (
+  keyword: string,
+  sort: string,
+  order: string,
+  page: number,
+  perPage: number
+) =>
+  dataUtils.getSearchResult(keyword, sort, order, page, perPage).pipe(
+    // handle error in search function to prevent ending the Observable and cease the following search behavior
+    catchError(error => {
+      alert(error.response.message);
+      return of([]);
+    })
+  );
