@@ -127,6 +127,7 @@ searchResult$.subscribe(result => {
   domUtils.loaded();
 });
 
+// handle error in search function to prevent ending the Observable and cease the following search behavior
 const getSearchResult = (
   keyword: string,
   sort: string,
@@ -135,9 +136,14 @@ const getSearchResult = (
   perPage: number
 ) =>
   dataUtils.getSearchResult(keyword, sort, order, page, perPage).pipe(
-    // handle error in search function to prevent ending the Observable and cease the following search behavior
+    // use flag to prevent causing side effect
+    map(result => ({ success: true, message: null, data: result })),
     catchError(error => {
-      alert(error.response.message);
-      return of([]);
+      // encapsulate the error in an object and let subscribers handle it
+      return of({
+        success: false,
+        message: error.response.message,
+        data: []
+      });
     })
   );
