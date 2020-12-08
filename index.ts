@@ -12,7 +12,8 @@ import {
   startWith,
   mapTo,
   scan,
-  catchError
+  catchError,
+  share
 } from "rxjs/operators";
 
 const keyword$ = fromEvent(document.getElementById("keyword"), "input").pipe(
@@ -117,14 +118,21 @@ startSearch$.subscribe(() => {
 
 const searchResult$ = startSearch$.pipe(
   switchMap(([keyword, sort, page, perPage]) =>
-    dataUtils.getSearchResult(keyword, sort.sort, sort.order, page, perPage)
-  )
+    getSearchResult(keyword, sort.sort, sort.order, page, perPage)
+  ),
+  // prevent being executed twice because of two different stream of observable
+  share()
 );
 
 // load data and remove cover page div
 searchResult$.subscribe(result => {
-  domUtils.fillSearchResult(result);
+  domUtils.fillSearchResult(result.data);
   domUtils.loaded();
+});
+
+// handle error if triggered
+searchResult$.pipe(filter(result => !result.success)).subscribe(result => {
+  alert(result.message);
 });
 
 // handle error in search function to prevent ending the Observable and cease the following search behavior
